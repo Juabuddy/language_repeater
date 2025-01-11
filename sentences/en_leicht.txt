@@ -1,0 +1,9 @@
+This is a cat.
+
+It is black.
+
+Cats like to play.
+
+I have a pet.
+
+My pet is small.
