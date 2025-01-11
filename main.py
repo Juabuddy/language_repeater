@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
+import re
 import os
-# import random
 from gtts import gTTS
 from difflib import SequenceMatcher
 import speech_recognition as sr
@@ -8,58 +8,22 @@ import time
 
 app = Flask(__name__)
 
-# Language database
-sentences = {
+# Paths to sentence files (organized by language and level)
+sentence_files = {
     "de": {
-        "leicht": [
-            "Hallo, wie geht es dir?",
-            "Ich liebe Programmieren mit Python.",
-            "Der Himmel ist heute sehr blau."
-        ],
-        "mittel": [
-            "Künstliche Intelligenz ist faszinierend.",
-            "Ich trinke gerne Kaffee am Morgen.",
-            "Die Blumen im Garten blühen prächtig."
-        ],
-        "schwer": [
-            "Die tiefgreifende Analyse der Daten ist essenziell.",
-            "Kollaboratives Arbeiten erfordert Kommunikation und Geduld.",
-            "Die Wolken spiegeln sich im ruhigen Wasser des Sees wider."
-        ]
+        "leicht": "sentences/de_leicht.txt",
+        "mittel": "sentences/de_mittel.txt",
+        "schwer": "sentences/de_schwer.txt"
     },
     "fr": {
-        "leicht": [
-            "Bonjour, comment ça va?",
-            "J'adore programmer en Python.",
-            "Le ciel est très bleu aujourd'hui."
-        ],
-        "mittel": [
-            "L'intelligence artificielle est fascinante.",
-            "Je bois du café le matin.",
-            "Les fleurs dans le jardin sont magnifiques."
-        ],
-        "schwer": [
-            "L'analyse approfondie des données est essentielle.",
-            "La collaboration nécessite communication et patience.",
-            "Les nuages se reflètent dans l'eau calme du lac."
-        ]
+        "leicht": "sentences/fr_leicht.txt",
+        "mittel": "sentences/fr_mittel.txt",
+        "schwer": "sentences/fr_schwer.txt"
     },
     "en": {
-        "leicht": [
-            "Hello, how are you?",
-            "I love programming with Python.",
-            "The sky is very blue today."
-        ],
-        "mittel": [
-            "Artificial intelligence is fascinating.",
-            "I enjoy drinking coffee in the morning.",
-            "The flowers in the garden are blooming beautifully."
-        ],
-        "schwer": [
-            "In-depth data analysis is essential.",
-            "Collaborative work requires communication and patience.",
-            "The clouds are reflected in the calm water of the lake."
-        ]
+        "leicht": "sentences/en_leicht.txt",
+        "mittel": "sentences/en_mittel.txt",
+        "schwer": "sentences/en_schwer.txt"
     }
 }
 
@@ -67,7 +31,18 @@ sentences = {
 current_language = "de"
 current_level = "leicht"
 current_index = 0
-current_sentence = sentences[current_language][current_level][current_index]
+current_sentences = []
+current_sentence = ""
+
+
+def load_sentences(language, level):
+    """Loads sentences from a text file for the given language and level."""
+    filepath = sentence_files[language].get(level)
+    if filepath and os.path.exists(filepath):
+        with open(filepath, "r", encoding="utf-8") as file:
+            return [line.strip() for line in file if line.strip()]
+    else:
+        return []
 
 
 def generate_audio(sentence, lang):
@@ -79,37 +54,56 @@ def generate_audio(sentence, lang):
     tts.save(filename)
 
 
+def clean_string(input_string):
+    """Remove all non-alphanumeric characters."""
+    return re.sub(r'[^a-zA-Z0-9 ]', '', input_string)
+
+
 def similarity_score(sentence1, sentence2):
-    """Calculates the similarity between two sentences."""
-    return SequenceMatcher(None, sentence1.lower(), sentence2.lower()).ratio()
+    """Calculate similarity while ignoring symbols."""
+    cleaned_sentence1 = clean_string(sentence1)
+    cleaned_sentence2 = clean_string(sentence2)
+
+    # Use SequenceMatcher to compare cleaned sentences
+    return SequenceMatcher(None, cleaned_sentence1.lower(), cleaned_sentence2.lower()).ratio()
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    global current_language, current_level, current_index, current_sentence
+    global current_language, current_level, current_index, current_sentences, current_sentence
 
-    # Change language
+    # Handle POST requests for changing settings or navigating sentences
     if request.method == "POST":
         if "language" in request.form:
             current_language = request.form["language"]
             current_index = 0
+            current_sentences = load_sentences(current_language, current_level)
 
-        # Change difficulty level
         if "level" in request.form:
             current_level = request.form["level"]
             current_index = 0
+            current_sentences = load_sentences(current_language, current_level)
 
-        # Proceed to the next sentence
         if "next" in request.form:
-            current_index = (current_index + 1) % len(sentences[current_language][current_level])
+            # Ensure we don't go out of bounds
+            if current_sentences:
+                current_index = (current_index + 1) % len(current_sentences)
+            else:
+                current_index = 0  # Fallback if no sentences loaded
 
-        # Repeat the current sentence
         if "repeat" in request.form:
-            pass  # Sentence remains the same
+            pass  # Sentence remains unchanged
 
-        # Sentence for playback
-        current_sentence = sentences[current_language][current_level][current_index]
-        generate_audio(current_sentence, current_language)
+    # If sentences are empty, try to load them
+    if not current_sentences:
+        current_sentences = load_sentences(current_language, current_level)
+
+    if current_sentences:
+        current_sentence = current_sentences[current_index]
+    else:
+        current_sentence = "No sentences available."  # Fallback if no sentences are loaded
+
+    generate_audio(current_sentence, current_language)
 
     return render_template("index.html",
                            sentence=current_sentence,
@@ -134,6 +128,8 @@ def check_speech():
             return render_template("result.html", error="I could not understand you.")
         except sr.RequestError:
             return render_template("result.html", error="Error during the request.")
+        except Exception as e:
+            return render_template("result.html", error=f"An error occurred: {str(e)}")
 
 
 if __name__ == "__main__":
