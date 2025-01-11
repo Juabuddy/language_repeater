@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Ergebnis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 { color: #333; }
+        p {
+            font-size: 18px;
+            margin: 10px 0;
+            color: #555;
+        }
+        button, a {
+            padding: 10px 15px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+        }
+        button { background: #007BFF; color: white; }
+        button:hover { background: #0056b3; }
+        a {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+        }
+        a:hover {
+            background: #218838;
+        }
+        .result {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .score {
+            font-size: 20px;
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ergebnis</h1>
+
+    <div class="result">
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% else %}
+            <p><strong>Originalsatz:</strong> {{ sentence }}</p>
+            <p><strong>Dein Satz:</strong> {{ user_response }}</p>
+            <p class="score">Punkte: {{ score }}/100</p>
+        {% endif %}
+    </div>
+
+    <a href="/">Zurück zum Spiel</a>
+</body>
+</html>

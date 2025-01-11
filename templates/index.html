@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Nachsprech-Spiel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 { color: #333; }
+        p { font-size: 18px; margin: 10px 0; }
+        button, select {
+            padding: 10px 15px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+        }
+        button { background: #007BFF; color: white; }
+        button:hover { background: #0056b3; }
+        audio { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>Nachsprech-Spiel</h1>
+    <p>{{ sentence }}</p>
+
+    <!-- Audio-Player -->
+    <audio controls>
+        <source src="/static/output.mp3?{{ timestamp }}" type="audio/mpeg">
+        Dein Browser unterstützt kein Audio.
+    </audio>
+
+    <!-- Formular für Interaktionen -->
+    <form method="POST">
+        <button name="repeat">🔄 Erneut hören</button>
+        <button name="next">➡️ Weiter</button>
+        <br><br>
+
+        <label for="language">Sprache:</label>
+        <select name="language" onchange="this.form.submit()">
+            <option value="de" {% if language == 'de' %} selected {% endif %}>Deutsch</option>
+            <option value="en" {% if language == 'en' %} selected {% endif %}>Englisch</option>
+            <option value="fr" {% if language == 'fr' %} selected {% endif %}>Französisch</option>
+        </select>
+
+        <label for="level">Schwierigkeit:</label>
+        <select name="level" onchange="this.form.submit()">
+            <option value="leicht" {% if level == 'leicht' %} selected {% endif %}>Leicht</option>
+            <option value="mittel" {% if level == 'mittel' %} selected {% endif %}>Mittel</option>
+            <option value="schwer" {% if level == 'schwer' %} selected {% endif %}>Schwer</option>
+        </select>
+    </form>
+
+    <!-- Sprachanalyse -->
+    <form action="/check" method="POST">
+        <button>🎤 Nachsprechen prüfen</button>
+    </form>
+</body>
+</html>
