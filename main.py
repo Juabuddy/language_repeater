@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request
 import os
-import random
+# import random
 from gtts import gTTS
 from difflib import SequenceMatcher
 import speech_recognition as sr
@@ -8,7 +8,7 @@ import time
 
 app = Flask(__name__)
 
-# Sprachdatenbank
+# Language database
 sentences = {
     "de": {
         "leicht": [
@@ -63,7 +63,7 @@ sentences = {
     }
 }
 
-# Globale Variablen
+# Global variables
 current_language = "de"
 current_level = "leicht"
 current_index = 0
@@ -71,7 +71,7 @@ current_sentence = sentences[current_language][current_level][current_index]
 
 
 def generate_audio(sentence, lang):
-    """Erstellt eine Audio-Datei."""
+    """Creates an audio file."""
     tts = gTTS(text=sentence, lang=lang)
     filename = "static/output.mp3"
     if os.path.exists(filename):
@@ -80,7 +80,7 @@ def generate_audio(sentence, lang):
 
 
 def similarity_score(sentence1, sentence2):
-    """Berechnet die Ähnlichkeit zweier Sätze."""
+    """Calculates the similarity between two sentences."""
     return SequenceMatcher(None, sentence1.lower(), sentence2.lower()).ratio()
 
 
@@ -88,26 +88,26 @@ def similarity_score(sentence1, sentence2):
 def index():
     global current_language, current_level, current_index, current_sentence
 
-    # Sprache ändern
+    # Change language
     if request.method == "POST":
         if "language" in request.form:
             current_language = request.form["language"]
             current_index = 0
 
-        # Schwierigkeit ändern
+        # Change difficulty level
         if "level" in request.form:
             current_level = request.form["level"]
             current_index = 0
 
-        # Weiter zum nächsten Satz
+        # Proceed to the next sentence
         if "next" in request.form:
             current_index = (current_index + 1) % len(sentences[current_language][current_level])
 
-        # Erneut anhören
+        # Repeat the current sentence
         if "repeat" in request.form:
-            pass  # Satz bleibt gleich
+            pass  # Sentence remains the same
 
-        # Satz zum Abspielen
+        # Sentence for playback
         current_sentence = sentences[current_language][current_level][current_index]
         generate_audio(current_sentence, current_language)
 
@@ -120,7 +120,7 @@ def index():
 
 @app.route("/check", methods=["POST"])
 def check_speech():
-    """Sprachanalyse durchführen."""
+    """Performs speech analysis."""
     global current_sentence, current_language
 
     recognizer = sr.Recognizer()
@@ -131,9 +131,9 @@ def check_speech():
             score = round(similarity_score(current_sentence, user_response) * 100)
             return render_template("result.html", sentence=current_sentence, user_response=user_response, score=score)
         except sr.UnknownValueError:
-            return render_template("result.html", error="Ich konnte dich nicht verstehen.")
+            return render_template("result.html", error="I could not understand you.")
         except sr.RequestError:
-            return render_template("result.html", error="Fehler bei der Anfrage.")
+            return render_template("result.html", error="Error during the request.")
 
 
 if __name__ == "__main__":
